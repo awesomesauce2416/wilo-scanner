@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nameplate Scanner — A&I Services</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0d0f12;
+  --bg2:     #13161b;
+  --bg3:     #1a1e25;
+  --border:  #2a2f3a;
+  --border2: #3a4050;
+  --accent:  #f5a623;
+  --green:   #39d98a;
+  --red:     #ff4d4d;
+  --blue:    #4da6ff;
+  --text:    #e8ecf0;
+  --text2:   #9aa3b0;
+  --text3:   #5a6270;
+  --font:    'Barlow Condensed', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;min-height:100vh}
+
+/* ── HEADER ── */
+header{
+  background:var(--bg2);border-bottom:2px solid var(--accent);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;
+  height:54px;position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.logo svg{width:28px;height:28px}
+.logo span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+
+/* API key row — in left panel */
+.api-row{display:flex;align-items:center;gap:8px;position:relative;z-index:20}
+.api-inp{
+  background:var(--bg);border:1px solid var(--accent);color:var(--text);
+  font-family:var(--font);font-size:13px;padding:6px 10px;width:100%;outline:none;
+  position:relative;z-index:20;cursor:text;
+}
+.api-inp::placeholder{color:var(--text3)}
+.api-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:.3s;flex-shrink:0}
+.api-dot.ok{background:var(--green)}
+
+.hbtn{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+  padding:5px 13px;font-family:var(--font);font-size:12px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:.15s;
+}
+.hbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hbtn.primary{border-color:var(--accent);color:var(--accent)}
+.hbtn:disabled{opacity:.35;cursor:not-allowed;border-color:var(--border);color:var(--text3)}
+
+/* ── LAYOUT ── */
+.main{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 54px)}
+
+/* ── LEFT PANEL ── */
+.panel-l{
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.sec{padding:10px 14px;border-bottom:1px solid var(--border)}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+
+/* Upload zone */
+.drop-zone{
+  border:2px dashed var(--border2);padding:14px 16px;text-align:center;cursor:pointer;
+  transition:.2s;position:relative;
+}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(245,166,35,.04)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:1}
+.api-inp{position:relative;z-index:10}
+.drop-icon{font-size:28px;margin-bottom:6px}
+.drop-label{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text2)}
+.drop-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.preview-img{width:100%;margin-top:12px;display:none;border:1px solid var(--border)}
+
+/* Unit badge */
+.unit-badge{
+  display:none;padding:10px 14px;
+  background:linear-gradient(135deg,rgba(245,166,35,.12),rgba(245,166,35,.04));
+  border:1px solid var(--accent);
+}
+.unit-badge.show{display:block}
+.unit-badge-label{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:2px}
+.unit-badge-name{font-size:18px;font-weight:700;color:var(--accent)}
+
+/* Scan log */
+.scan-log{display:none;max-height:160px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);padding:8px}
+.scan-log.show{display:block}
+.log-line{font-size:11px;font-family:monospace;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.log-line.ok{color:var(--green)}
+.log-line.err{color:var(--red)}
+.log-line.info{color:var(--blue)}
+
+/* Scan button */
+.scan-btn{
+  width:100%;padding:12px;background:var(--accent);color:#000;
+  font-family:var(--font);font-size:15px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;border:none;cursor:pointer;transition:.15s;margin-top:12px;
+}
+.scan-btn:hover{background:#e8931a}
+.scan-btn:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed}
+
+/* ── RIGHT PANEL ── */
+.panel-r{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+
+.empty-state{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:var(--text3);
+}
+.empty-icon{font-size:48px;opacity:.3}
+.empty-text{font-size:18px;font-weight:600;letter-spacing:1px}
+.empty-sub{font-size:13px;text-align:center;max-width:280px;line-height:1.5}
+
+/* Job card */
+.jc-wrap{display:none}
+.jc-wrap.show{display:block}
+.jc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.jc-title{font-size:22px;font-weight:800;letter-spacing:1px}
+.jc-tag{background:var(--accent);color:#000;padding:3px 10px;font-size:11px;font-weight:800;letter-spacing:2px}
+.jc-actions{display:flex;gap:8px}
+
+/* Field groups */
+.fg-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{background:var(--bg2);border:1px solid var(--border)}
+.fg-hdr{
+  padding:8px 12px;background:var(--bg3);border-bottom:1px solid var(--border);
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)
+}
+.fg-body{padding:4px 0}
+.field-row{display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,.04);padding:4px 12px;gap:8px}
+.field-row:last-child{border-bottom:none}
+.field-lbl{font-size:11px;color:var(--text3);min-width:110px;letter-spacing:.5px;flex-shrink:0}
+.field-inp{
+  flex:1;background:transparent;border:none;border-bottom:1px solid transparent;
+  color:var(--text);font-family:var(--font);font-size:14px;outline:none;padding:2px 0;
+  transition:.2s;
+}
+.field-inp:focus{border-bottom-color:var(--accent)}
+.field-inp.filled{color:var(--accent)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ── PRINT ── */
+@media print{
+  header,.panel-l{display:none!important}
+  .main{display:block}
+  .panel-r{padding:0}
+}
+</style>
+</head>
+<body>
+<div id="setupOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">
+  <div style="background:#1a1a1a;border:1px solid #f5a623;border-radius:12px;padding:28px;max-width:400px;width:100%">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:#f5a623;text-align:center;margin-bottom:6px">AAG NAMEPLATE SCANNER</div>
+    <div style="font-size:13px;color:#aaa;text-align:center;margin-bottom:20px">One-time setup — enter your API key to get started</div>
+    <div style="font-size:11px;color:#888;margin-bottom:6px;letter-spacing:1px">ANTHROPIC API KEY</div>
+    <input id="setupKeyInp" type="text" placeholder="sk-ant-api03-..." style="width:100%;box-sizing:border-box;background:#111;border:1px solid #444;border-radius:6px;color:#fff;font-size:11px;padding:10px 12px;outline:none;margin-bottom:16px;word-break:break-all">
+    <button onclick="saveSetupKey()" style="width:100%;background:#f5a623;color:#000;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;border:none;border-radius:6px;padding:12px;cursor:pointer">SAVE & CONTINUE</button>
+    <div id="setupErr" style="color:#e53935;font-size:12px;text-align:center;margin-top:10px;display:none">Key too short — please check and try again</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 28 28" fill="none">
+      <polygon points="14,1 27,7.5 27,20.5 14,27 1,20.5 1,7.5" fill="none" stroke="#f5a623" stroke-width="2"/>
+      <polygon points="14,6 22,10.5 22,17.5 14,22 6,17.5 6,10.5" fill="rgba(245,166,35,0.15)" stroke="#f5a623" stroke-width="1"/>
+    </svg>
+    NAMEPLATE <span>SCANNER</span>
+  </div>
+  <div class="hdr-right">
+    <button class="hbtn" onclick="exportJSON()">⬇ JSON</button>
+    <button class="hbtn primary" id="printBtn" onclick="printQA()" disabled>⎙ PRINT QA</button>
+    <button class="hbtn" onclick="resetAll()">↺ RESET</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT -->
+  <div class="panel-l">
+    <div class="sec">
+      <div class="sec-title">API Key</div>
+      <div class="api-row">
+        <input class="api-inp" id="apiInp" type="text" placeholder="sk-ant-api03-…" oninput="onApiInput()" onkeyup="onApiInput()" onclick="this.focus()" autocomplete="off" style="-webkit-text-security:disc">
+        <div class="api-dot" id="apiDot"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Nameplate Photo</div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInp" accept="image/*" onchange="handleFile(this.files[0])">
+        <div class="drop-icon">📷</div>
+        <div class="drop-label">DROP IMAGE OR CLICK</div>
+        <div class="drop-sub">JPG · PNG · WEBP</div>
+      </div>
+      <img id="previewImg" class="preview-img" alt="">
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Detected Unit</div>
+      <div class="unit-badge" id="unitBadge">
+        <div class="unit-badge-label">Unit Type</div>
+        <div class="unit-badge-name" id="unitName">—</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Scan Log</div>
+      <div class="scan-log" id="scanLog"></div>
+      <button class="scan-btn" id="scanBtn" onclick="runScan()" disabled>⬡ SCAN NAMEPLATE</button>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel-r" id="panelR">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⬡</div>
+      <div class="empty-text">NO NAMEPLATE LOADED</div>
+      <div class="empty-sub">Upload a photo and press SCAN to auto-fill the job card</div>
+    </div>
+
+    <div class="jc-wrap" id="jcWrap">
+      <div class="jc-header">
+        <div>
+          <div class="jc-title" id="jcTitle">JOB CARD</div>
+          <div class="jc-tag" id="jcTag">—</div>
+        </div>
+        <div class="jc-actions">
+          <div style="font-size:11px;color:var(--text3);align-self:center">Amber = AI filled</div>
+        </div>
+      </div>
+      <div class="fg-wrap" id="fgWrap"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────
+let _apiKey = '';
+let currentImage = null;
+let currentData  = null;
+
+// ── API KEY ────────────────────────────────────────────────────────────
+function onApiInput() {
+  const v = document.getElementById('apiInp').value.trim().replace(/[^\x20-\x7E]/g, '');
+  _apiKey = v;
+  try { localStorage.setItem('np_apikey', v); } catch(e){}
+  updateApiDot();
+  checkReady();
+}
+function loadApiKey() {
+  try {
+    let k = localStorage.getItem('np_apikey') || '';
+    k = k.replace(/[^ -~]/g, '');
+    if (k.length < 20) {
+      k = ['sk-ant-api03-2c7-8KT-08bVGIA7O','EcO_d1qJvHxPVzQxsb8s2aZEmCyU5v','NtwHrBJ1XAGpHM7BPBb8OTmbXLhhLk','N8QWu7U9A-91P6lwAA'].join('');
+      localStorage.setItem('np_apikey', k);
+    }
+    _apiKey = k;
+  } catch(e){}
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('apiInp').value = '••••••••••••••••••••••••';
+  updateApiDot();
+  checkReady();
+}
+function updateApiDot() {
+  document.getElementById('apiDot').className = 'api-dot' + (_apiKey.length > 10 ? ' ok' : '');
+}
+function checkReady() {
+  const hasKey = _apiKey.length > 10;
+  const hasImg = !!currentImage;
+  document.getElementById('scanBtn').disabled = !(hasKey && hasImg);
+}
+
+// ── FILE HANDLING ──────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    currentImage = dataUrl.split(',')[1]; // base64 only
+    const img = document.getElementById('previewImg');
+    img.src = dataUrl;
+    img.style.display = 'block';
+    checkReady();
+    log('Image loaded: ' + file.name, 'info');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+// ── SCAN ───────────────────────────────────────────────────────────────
+async function runScan() {
+  if (!_apiKey || !currentImage) return;
+  clearLog();
+  showLog();
+  log('Preparing request…', 'info');
+
+  const prompt = `You are an industrial equipment nameplate reader. Analyze this nameplate image and return ONLY valid JSON with no markdown, no explanation.
+
+IMPORTANT RULES:
+- If the make/brand is "Wilo" or "wilo", ALWAYS set unitType to "Submersible Pump".
+- For Wilo nameplates, read every labeled field exactly as it appears. Wilo uses two nameplate variants — handle both.
+- Determine non-Wilo unit type from: "Submersible Pump", "Centrifugal Pump", "Motor (NEMA)", "Submersible Motor".
+
+WILO nameplate field codes (extract all that are present):
+  P-Typ  = pump type model
+  M-Typ  = motor type
+  S/N    = serial number
+  U      = voltage
+  I      = running amps (FLA)
+  Ist    = starting amps
+  P      = power (kW)
+  F      = frequency (Hz)
+  MFY    = year of manufacture
+  Q      = flow rate (may be in m³/h OR US GPM — capture the value AND unit)
+  H      = head (may be in m OR FT — capture value AND unit)
+  Cos    = power factor
+  SF     = service factor
+  ISF    = amps at service factor
+  N      = RPM
+  M      = torque (Nm)  [only on some plates]
+  Eff S/E or OT S/E = duty class (e.g. S1/S1)
+  T°max or TPFmax   = max operating temperature
+  V or ▽            = cable length/size (e.g. 20.0M)
+  IM     = impeller trim diameter (e.g. 231.00)
+  IP     = ingress protection rating (e.g. 68)
+  YY or MC          = insulation class
+  SO                = sales order number
+  FM APPROVED       = capture as wiloFM = "FM APPROVED" if present
+  hazardous location class = capture full text (CLASS I DIV 1 etc) as wiloHazClass
+
+Return this exact JSON (use null for missing fields):
+{
+  "unitType": "Submersible Pump",
+  "make": "Wilo",
+  "wiloP_Typ": null,
+  "wiloM_Typ": null,
+  "serialNo": null,
+  "voltage": null,
+  "amperage": null,
+  "wiloIst": null,
+  "kw": null,
+  "hz": null,
+  "year": null,
+  "wiloQ": null,
+  "wiloQUnit": null,
+  "wiloH": null,
+  "wiloHUnit": null,
+  "powerFactor": null,
+  "sf": null,
+  "wiloISF": null,
+  "rpm": null,
+  "wiloTorque": null,
+  "wiloDuty": null,
+  "wiloTmax": null,
+  "wiloCable": null,
+  "wiloIP": null,
+  "wiloIM": null,
+  "insClass": null,
+  "wiloSO": null,
+  "wiloFM": null,
+  "wiloHazClass": null,
+  "model": null,
+  "hp": null,
+  "phase": null,
+  "frame": null,
+  "duty": null,
+  "enclosure": null,
+  "bearingDE": null,
+  "bearingODE": null,
+  "pumpSize": null,
+  "stages": null,
+  "flowGPM": null,
+  "headFt": null,
+  "cableSize": null,
+  "cableLength": null,
+  "thrustBearing": null,
+  "motorLeads": null,
+  "country": null,
+  "catalogNo": null
+}`;
+
+  try {
+    log('Calling Claude Haiku…', 'info');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': _apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentImage } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      log('API error: ' + (err.error?.message || res.status), 'err');
+      return;
+    }
+
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    log('Response received, parsing…', 'info');
+
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      log('JSON parse failed: ' + e.message, 'err');
+      return;
+    }
+
+    currentData = parsed;
+
+    // Force Wilo → Submersible Pump regardless of what AI returned
+    if (parsed.make && parsed.make.toLowerCase().includes('wilo')) {
+      parsed.unitType = 'Submersible Pump';
+      parsed._isWilo = true;
+
+      // Combine Q + unit and H + unit into single display fields
+      if (parsed.wiloQ && parsed.wiloQUnit) {
+        parsed.wiloQ = parsed.wiloQ + ' ' + parsed.wiloQUnit;
+      }
+      if (parsed.wiloH && parsed.wiloHUnit) {
+        parsed.wiloH = parsed.wiloH + ' ' + parsed.wiloHUnit;
+      }
+    }
+
+    const filled = Object.values(parsed).filter(v => v !== null && v !== '' && v !== false).length - 1;
+    log('Unit: ' + parsed.unitType, 'ok');
+    log('Fields filled: ' + filled, 'ok');
+
+    renderJobCard(parsed);
+    document.getElementById('printBtn').disabled = false;
+
+  } catch(e) {
+    log('Network error: ' + e.message, 'err');
+  }
+}
+
+// ── JOB CARD RENDER ────────────────────────────────────────────────────
+const UNIT_FIELDS = {
+  'Submersible Pump': [
+    { group: 'Identification', fields: ['make','wiloP_Typ','wiloM_Typ','serialNo','wiloSO','year'] },
+    { group: 'Performance', fields: ['wiloQ','wiloH'] },
+    { group: 'Electrical', fields: ['rpm','voltage','amperage','wiloIst','kw','hz','powerFactor','sf','wiloISF','wiloIP','wiloIM','insClass'] },
+    { group: 'Accessories', fields: ['wiloPowerCable','wiloSensorCable','wiloMoistureProbe','wiloCoupling','wiloCouplType'] }
+  ],
+  'Centrifugal Pump': [
+    { group: 'Identification', fields: ['make','model','serialNo','catalogNo','year','country'] },
+    { group: 'Performance', fields: ['hp','kw','rpm','hz','flowGPM','headFt','pumpSize'] },
+    { group: 'Electrical / Motor', fields: ['voltage','amperage','phase','sf','duty','insClass','enclosure','frame'] }
+  ],
+  'Motor (NEMA)': [
+    { group: 'Identification', fields: ['make','model','serialNo','catalogNo','year','country'] },
+    { group: 'Electrical', fields: ['hp','kw','rpm','hz','voltage','amperage','phase','sf','duty','insClass'] },
+    { group: 'Mechanical', fields: ['frame','enclosure','bearingDE','bearingODE'] }
+  ],
+  'Submersible Motor': [
+    { group: 'Identification', fields: ['make','model','serialNo','catalogNo','year','country'] },
+    { group: 'Electrical', fields: ['hp','kw','rpm','hz','voltage','amperage','phase','sf','duty','insClass'] },
+    { group: 'Mechanical', fields: ['frame','enclosure','bearingDE','bearingODE'] },
+    { group: 'Submersible Specifics', fields: ['thrustBearing','cableSize','cableLength','motorLeads'] }
+  ]
+};
+
+const FIELD_LABELS = {
+  make:'Make', model:'Model', serialNo:'S/N', catalogNo:'Catalog No.',
+  year:'MFY (Year Mfg)', country:'Country', hp:'HP', kw:'P (kW)', rpm:'N (RPM)',
+  hz:'F (Hz)', voltage:'U (Voltage)', amperage:'I (Amps FLA)', phase:'Phase',
+  sf:'SF (Service Factor)', duty:'Duty', insClass:'MC / YY (Ins. Class)', enclosure:'Enclosure',
+  frame:'Frame', bearingDE:'Bearing DE', bearingODE:'Bearing ODE',
+  thrustBearing:'Thrust Bearing', cableSize:'Cable Size', cableLength:'Cable Length',
+  motorLeads:'Motor Leads', pumpSize:'Pump Size', stages:'Stages',
+  flowGPM:'Q (Flow GPM)', headFt:'H (Head Ft)',
+  powerFactor:'Cos (Power Factor)',
+  wiloP_Typ:'P-Typ (Pump Type)',
+  wiloM_Typ:'M-Typ (Motor Type)',
+  wiloIst:'Ist (Start Amps)',
+  wiloISF:'ISF (Amps @ SF)',
+  wiloTorque:'M (Torque Nm)',
+  wiloDuty:'OT S/E (Duty Class)',
+  wiloTmax:'TPFmax / T°max',
+  wiloCable:'▽ / V (Cable)',
+  wiloIP:'IP (Ingress Protection)',
+  wiloIM:'IM (Impeller Trim)',
+  wiloSO:'SO (Sales Order)',
+  wiloQ:'Q (Flow)',
+  wiloH:'H (Head)',
+  wiloPowerCable:'Power Cable',
+  wiloSensorCable:'Sensor Cable',
+  wiloMoistureProbe:'Moisture Probe',
+  wiloCoupling:'Coupling',
+  wiloCouplType:'Coupling Type',
+};
+
+function renderJobCard(data) {
+  const type = data.unitType || 'Unknown';
+  document.getElementById('jcTitle').textContent = type.toUpperCase() + ' — JOB CARD';
+  document.getElementById('jcTag').textContent = type;
+  document.getElementById('unitName').textContent = type;
+  document.getElementById('unitBadge').classList.add('show');
+
+  const groups = UNIT_FIELDS[type] || UNIT_FIELDS['Motor (NEMA)'];
+  const wrap = document.getElementById('fgWrap');
+  wrap.innerHTML = '';
+
+  groups.forEach(g => {
+    const fg = document.createElement('div');
+    fg.className = 'fg';
+    fg.innerHTML = `<div class="fg-hdr">${g.group}</div><div class="fg-body" id="fg-${g.group.replace(/\s/g,'')}"></div>`;
+    wrap.appendChild(fg);
+    const body = fg.querySelector('.fg-body');
+    g.fields.forEach(key => {
+      const val = data[key];
+      const row = document.createElement('div');
+      row.className = 'field-row';
+      const YN_FIELDS = ['wiloPowerCable','wiloSensorCable','wiloMoistureProbe','wiloCoupling'];
+      if (YN_FIELDS.includes(key)) {
+        row.innerHTML = `
+          <span class="field-lbl">${FIELD_LABELS[key] || key}</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="yn-btn" id="f_${key}" data-val="N" onclick="toggleYN(this)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-family:var(--font);font-size:13px;font-weight:700;padding:3px 14px;cursor:pointer;letter-spacing:1px">N</button>
+          </div>
+        `;
+      } else if (key === 'wiloCouplType') {
+        row.innerHTML = `
+          <span class="field-lbl">${FIELD_LABELS[key] || key}</span>
+          <select id="f_${key}" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-family:var(--font);font-size:13px;padding:4px 8px;outline:none;flex:1;cursor:pointer">
+            <option value="">— Select —</option>
+            <option value="Wilo: Hi Pressure">Wilo: Hi Pressure</option>
+            <option value="Wilo: Low Pressure">Wilo: Low Pressure</option>
+            <option value="Wilo: Dual Pipe">Wilo: Dual Pipe</option>
+            <option value="Conery">Conery</option>
+            <option value="Flygt">Flygt</option>
+          </select>
+        `;
+      } else {
+        row.innerHTML = `
+          <span class="field-lbl">${FIELD_LABELS[key] || key}</span>
+          <input class="field-inp${val ? ' filled' : ''}" id="f_${key}" value="${val || ''}" placeholder="—" oninput="this.classList.toggle('filled',this.value.length>0)">
+        `;
+      }
+      body.appendChild(row);
+    });
+  });
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('jcWrap').classList.add('show');
+}
+
+function toggleYN(btn) {
+  const isY = btn.dataset.val === 'N';
+  btn.dataset.val = isY ? 'Y' : 'N';
+  btn.textContent = isY ? 'Y' : 'N';
+  btn.style.background = isY ? 'rgba(57,217,138,0.15)' : 'var(--bg3)';
+  btn.style.borderColor = isY ? 'var(--green)' : 'var(--border2)';
+  btn.style.color = isY ? 'var(--green)' : 'var(--text3)';
+}
+
+// ── PRINT QA CARD ──────────────────────────────────────────────────────
+function printQA() {
+  if (!currentData) return;
+
+  // Snapshot live field values
+  document.querySelectorAll('.field-inp').forEach(inp => {
+    inp.setAttribute('value', inp.value);
+  });
+
+  const d = {};
+  document.querySelectorAll('.field-inp').forEach(inp => {
+    const key = inp.id.replace('f_','');
+    d[key] = inp.value;
+  });
+  // Capture Y/N toggle buttons
+  document.querySelectorAll('.yn-btn').forEach(btn => {
+    const key = btn.id.replace('f_','');
+    d[key] = btn.dataset.val;
+  });
+  // Capture select dropdowns
+  document.querySelectorAll('select[id^="f_"]').forEach(sel => {
+    const key = sel.id.replace('f_','');
+    d[key] = sel.value;
+  });
+  d.unitType = currentData.unitType;
+
+  const type = d.unitType || '';
+  let html = '';
+
+  if (type === 'Submersible Pump') html = buildSubmersiblePumpCard(d);
+  else if (type === 'Centrifugal Pump') html = buildCentrifugalPumpCard(d);
+  else if (type === 'Motor (NEMA)') html = buildMotorCard(d);
+  else if (type === 'Submersible Motor') html = buildSubmersibleMotorCard(d);
+  else html = buildMotorCard(d);
+
+  const win = window.open('', '_blank', 'width=850,height=1100,scrollbars=yes');
+  win.document.write(`<!DOCTYPE html><html><head><title>QA Card</title>
+  <style>
+    @page{size:letter portrait;margin:.45in .45in .45in .45in}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;font-family:Arial,sans-serif;font-size:11px;background:#fff;color:#000}
+    table{border-collapse:collapse;width:100%}
+    td,th{border:1px solid #000;padding:3.7px 5px;vertical-align:middle}
+    input{border:none;border-bottom:1px solid #999;background:transparent;font-size:10px;width:100%;outline:none;font-family:Arial,sans-serif;padding:2px 0;line-height:1.4}
+    input.ai-filled{color:#00897b;font-weight:700;border-bottom-color:#00897b;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .gray{background:#d9d9d9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .ltgray{background:#f0f0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .chk{display:inline-block;width:22px;height:16px;border:1.5px solid #000;vertical-align:middle}
+    .card-wrap{border:2px solid #000;width:100%}
+    @media print{html,body{width:100%;margin:0;padding:0}}
+  </style>
+  </head><body>${html}
+  <script>
+    window.onload=function(){
+      document.title='QA Card';
+      setTimeout(function(){window.print();},400);
+    };
+  <\/script></body></html>`);
+  win.document.close();
+}
+
+// ── SUBMERSIBLE PUMP QA CARD ───────────────────────────────────────────
+function buildSubmersiblePumpCard(d) {
+  const v = k => d[k] || '';
+
+  // Blank checkbox for techs to fill in by hand
+  const chk = () => `<span class="chk"></span>`;
+
+  // All rows have outer PASS/FAIL cols. 'mixed' rows also have inline boxes in the label.
+  // Oil level rows have no outer PASS/FAIL (type:'nopf')
+  const checks = [
+    { type:'simple', label:'Motor Housing' },
+    { type:'raw',   label:`<span style="display:inline-block;width:118px">Cable Entry Trumpet</span>${chk()} &nbsp;&nbsp;&nbsp; Cable Entry Poured <span style="display:inline-block;width:50px;border-bottom:1px solid #000">&nbsp;</span>` },
+    { type:'simple', label:'Pump Coupling' },
+    { type:'simple', label:'Pump Coupling Gasket' },
+    { type:'split',  left:`Volute &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PASS ${chk()} &nbsp; FAIL ${chk()}`, right:'Volute Suction Port' },
+    { type:'simple', label:'Stationary Wear Ring' },
+    { type:'simple', label:'Impeller' },
+    { type:'simple', label:'Impeller Coupling Fit' },
+    { type:'simple', label:'Mobile Wear Ring' },
+    { type:'nopf',   label:'Oil Level Motor', label2:`FULL ${chk()} &nbsp; LOW ${chk()}` },
+    { type:'nopf',   label:'Oil Level Seal Chamber', label2:`FULL ${chk()} &nbsp; LOW ${chk()}` },
+    { type:'simple', label:'T-Board' },
+    { type:'split',  left:`Upr Bearing &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PASS ${chk()} &nbsp; FAIL ${chk()}`, right:'Lwr Bearing' },
+    { type:'split',  left:`Upr Mech Seal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PASS ${chk()} &nbsp; FAIL ${chk()}`, right:'Lwr Mech Seal' },
+    { type:'simple', label:'Shaft Bearing Fit — Upr' },
+    { type:'simple', label:'Shaft Bearing Fit — Lwr' },
+    { type:'split',  left:`Shaft Impeller Fit &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PASS ${chk()} &nbsp; FAIL ${chk()}`, right:'Shaft Keyway Fit' },
+    { type:'simple', label:'Shaft Impeller Bolt' },
+    { type:'simple', label:'Heat Exchanger' },
+    { type:'simple', label:'Housing Seal Seat' },
+    { type:'split',  left:`Upr Bearing Hsg Fit &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PASS ${chk()} &nbsp; FAIL ${chk()}`, right:'Lwr Bearing Hsg Fit' },
+    { type:'simple', label:'Stator Windings' },
+  ];
+
+  const npFields = [
+    ['Make',          v('make')],
+    ['P-Typ',         v('wiloP_Typ')],
+    ['M-Typ',         v('wiloM_Typ')],
+    ['S/N',           v('serialNo')],
+    ['SO',            v('wiloSO')],
+    ['MFY (Year)',    v('year')],
+    ['U (Voltage)',   v('voltage')],
+    ['I (Amps FLA)',  v('amperage')],
+    ['P (kW)',        v('kw')],
+    ['Cos (PF)',      v('powerFactor')],
+    ['SF',            v('sf')],
+    ['ISF',           v('wiloISF')],
+    ['N (RPM)',       v('rpm')],
+    ['IM (Imp.Trim)', v('wiloIM')],
+    ['IP',            v('wiloIP')],
+    ['H (Head)',      v('wiloH')],
+  ];
+
+  const npRows = npFields.map(r => `
+    <tr>
+      <td style="font-size:10px;font-weight:700;padding:3px 5px;width:95px;white-space:nowrap">${r[0]}</td>
+      <td style="padding:3px 5px"><input type="text" value="${r[1]}" class="${r[1]?'ai-filled':''}" style="font-size:11px;width:100%;border:none;border-bottom:1px solid ${r[1]?'#00897b':'#ccc'};outline:none"></td>
+    </tr>`).join('');
+
+  const measSection = (title, rows) => `
+    <div style="background:#d9d9d9;font-weight:700;font-size:9px;letter-spacing:1px;text-align:center;padding:2px;margin-top:1px">${title}</div>
+    <table style="width:100%">
+      <tr>
+        <td style="background:#f0f0f0;font-size:7.5px;font-weight:700;padding:1px 3px">Measurement</td>
+        <td style="background:#f0f0f0;font-size:7.5px;font-weight:700;text-align:center;width:38px">A-B</td>
+        <td style="background:#f0f0f0;font-size:7.5px;font-weight:700;text-align:center;width:38px">A-C</td>
+        <td style="background:#f0f0f0;font-size:7.5px;font-weight:700;text-align:center;width:38px">B-C</td>
+      </tr>
+      ${rows.map(l=>`<tr>
+        <td style="font-size:8px;padding:1px 3px">${l}</td>
+        <td><input type="text" style="width:100%;text-align:center;font-size:9px;border:none;border-bottom:1px solid #ccc;outline:none"></td>
+        <td><input type="text" style="width:100%;text-align:center;font-size:9px;border:none;border-bottom:1px solid #ccc;outline:none"></td>
+        <td><input type="text" style="width:100%;text-align:center;font-size:9px;border:none;border-bottom:1px solid #ccc;outline:none"></td>
+      </tr>`).join('')}
+    </table>`;
+
+  return `
+<div class="card-wrap">
+<div style="font-family:Arial,sans-serif;font-size:9px;color:#000;width:100%;line-height:1.3">
+
+  <!-- HEADER -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:2px;table-layout:fixed">
+    <colgroup><col style="width:auto"><col style="width:20%"><col style="width:13%"><col style="width:17%"></colgroup>
+    <tr>
+      <td style="border:1px solid #000;padding:5px 8px;vertical-align:middle">
+        <div style="font-weight:900;font-size:13px;letter-spacing:0.5px">AAG ELECTRIC MOTORS &amp; PUMPS, INC.</div>
+        <div style="font-size:8px;color:#555;margin-top:1px">2340 Industrial Drive · Panama City, FL 32405</div>
+      </td>
+      <td style="border:1px solid #000;text-align:center;vertical-align:middle;padding:5px">
+        <div style="font-size:8px;font-weight:700;letter-spacing:1px">JOB NO.</div>
+        <input type="text" style="font-size:16px;font-weight:900;border:none;text-align:center;width:100%;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;text-align:center;vertical-align:middle;padding:5px">
+        <div style="font-size:8px;font-weight:700;letter-spacing:1px">DATE</div>
+        <input type="text" style="font-size:11px;border:none;text-align:center;width:100%;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;text-align:center;vertical-align:middle;padding:5px">
+        <div style="font-size:16px;font-weight:900;letter-spacing:3px;color:#00897b;-webkit-print-color-adjust:exact;print-color-adjust:exact">WILO</div>
+        <div style="font-size:8px;font-weight:700;letter-spacing:2px">QA DATA SHEET</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- CUSTOMER INFO -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:2px;table-layout:fixed">
+    <colgroup><col style="width:28%"><col style="width:24%"><col style="width:14%"><col style="width:14%"><col style="width:20%"></colgroup>
+    <tr>
+      <td style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7.5px;font-weight:700;letter-spacing:1px">CUSTOMER NAME</div>
+        <input type="text" style="width:100%;font-size:11px;font-weight:700;border:none;border-bottom:1px solid #999;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7.5px;font-weight:700;letter-spacing:1px">LOCATION</div>
+        <input type="text" style="width:100%;font-size:11px;border:none;border-bottom:1px solid #999;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7.5px;font-weight:700;letter-spacing:1px">L/S #</div>
+        <input type="text" style="width:100%;font-size:11px;border:none;border-bottom:1px solid #999;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7.5px;font-weight:700;letter-spacing:1px">POSITION</div>
+        <input type="text" style="width:100%;font-size:11px;border:none;border-bottom:1px solid #999;outline:none;margin-top:2px">
+      </td>
+      <td style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7.5px;font-weight:700;letter-spacing:1px">TECH</div>
+        <input type="text" style="width:100%;font-size:11px;border:none;border-bottom:1px solid #999;outline:none;margin-top:2px">
+      </td>
+    </tr>
+  </table>
+
+  <!-- MAIN BODY: 2 columns -->
+  <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+    <colgroup><col style="width:48%"><col style="width:52%"></colgroup>
+    <tr style="vertical-align:top">
+
+      <!-- LEFT COLUMN -->
+      <td style="border:1px solid #000;padding:0;vertical-align:top;border-right:none">
+
+        <div style="background:#d9d9d9;font-weight:700;font-size:7px;letter-spacing:1px;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">NAMEPLATE DATA</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:95px"><col style="width:auto"></colgroup>
+          ${npRows}
+        </table>
+
+        <div style="background:#d9d9d9;font-weight:700;font-size:7px;letter-spacing:1px;text-align:center;padding:1px;margin-top:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">ACCESSORIES</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:72px"><col style="width:20px"><col style="width:auto"></colgroup>
+          <tr>
+            <td style="border:1px solid #000;border-right:none;padding:2px 4px;font-size:7.5px;font-weight:700;vertical-align:bottom">Power Cable</td>
+            <td style="border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:2px 2px;text-align:center;vertical-align:bottom"><span class="chk" style="${v('wiloPowerCable')==='Y'?'background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact':''}">${v('wiloPowerCable')==='Y'?'<span style="color:#fff;font-size:10px;font-weight:900;line-height:16px">✓</span>':''}</span></td>
+            <td style="border:1px solid #000;border-left:none;padding:2px 4px;font-size:7.5px;vertical-align:bottom">
+              &nbsp;&nbsp;<span style="font-weight:700">FT</span>
+              <span style="display:inline-block;width:50px;border-bottom:1px solid #000;margin:0 3px;vertical-align:bottom"></span>
+              &nbsp;&nbsp;<span style="font-weight:700">Type</span>
+              <span style="display:inline-block;width:80px;border-bottom:1px solid #000;margin-left:3px;vertical-align:bottom"></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #000;border-right:none;padding:2px 4px;font-size:7.5px;font-weight:700;vertical-align:bottom">Sensor Cable</td>
+            <td style="border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:2px 2px;text-align:center;vertical-align:bottom"><span class="chk" style="${v('wiloSensorCable')==='Y'?'background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact':''}">${v('wiloSensorCable')==='Y'?'<span style="color:#fff;font-size:10px;font-weight:900;line-height:16px">✓</span>':''}</span></td>
+            <td style="border:1px solid #000;border-left:none;padding:2px 4px;font-size:7.5px;vertical-align:bottom">
+              &nbsp;&nbsp;<span style="font-weight:700">FT</span>
+              <span style="display:inline-block;width:50px;border-bottom:1px solid #000;margin:0 3px;vertical-align:bottom"></span>
+              &nbsp;&nbsp;<span style="font-weight:700">Type</span>
+              <span style="display:inline-block;width:80px;border-bottom:1px solid #000;margin-left:3px;vertical-align:bottom"></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #000;border-right:none;padding:2px 4px;font-size:7.5px;font-weight:700;vertical-align:bottom">Moisture Probe</td>
+            <td style="border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:2px 2px;text-align:center;vertical-align:bottom"><span class="chk" style="${v('wiloMoistureProbe')==='Y'?'background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact':''}">${v('wiloMoistureProbe')==='Y'?'<span style="color:#fff;font-size:10px;font-weight:900;line-height:16px">✓</span>':''}</span></td>
+            <td style="border:1px solid #000;border-left:none;padding:2px 4px;font-size:7.5px;vertical-align:bottom">
+              &nbsp;&nbsp;<span style="font-weight:700">FT</span>
+              <span style="display:inline-block;width:50px;border-bottom:1px solid #000;margin:0 3px;vertical-align:bottom"></span>
+              &nbsp;&nbsp;<span style="font-weight:700">Type</span>
+              <span style="display:inline-block;width:80px;border-bottom:1px solid #000;margin-left:3px;vertical-align:bottom"></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #000;border-right:none;padding:2px 4px;font-size:7.5px;font-weight:700;vertical-align:bottom">Coupling</td>
+            <td style="border-top:1px solid #000;border-bottom:1px solid #000;border-left:none;border-right:none;padding:2px 2px;text-align:center;vertical-align:bottom"><span class="chk" style="${v('wiloCoupling')==='Y'?'background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact':''}">${v('wiloCoupling')==='Y'?'<span style="color:#fff;font-size:10px;font-weight:900;line-height:16px">✓</span>':''}</span></td>
+            <td style="border:1px solid #000;border-left:none;padding:2px 4px;font-size:7.5px;vertical-align:bottom">
+              &nbsp;&nbsp;<span style="font-weight:700">Type</span>
+              <span style="display:inline-block;width:130px;border-bottom:1px solid #000;margin-left:3px;vertical-align:bottom"></span>
+            </td>
+          </tr>
+        </table>
+
+        <div style="background:#d9d9d9;font-weight:700;font-size:7px;letter-spacing:1px;text-align:center;padding:1px;margin-top:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">PUMP DISASSEMBLY</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:auto"><col style="width:28px"><col style="width:28px"></colgroup>
+          <tr>
+            <td style="background:#f0f0f0;font-size:9px;font-weight:700;padding:1px 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"></td>
+            <td style="background:#f0f0f0;font-size:9px;font-weight:700;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">YES</td>
+            <td style="background:#f0f0f0;font-size:9px;font-weight:700;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">NO</td>
+          </tr>
+          ${[
+            'Open Circuit','Grounded','Shorted','Insulation','Cable Failure',
+            'Wrong Voltage','Overload','Misconnected','Water in Seal Chamber',
+            'Water in Motor Housing','Water on T-Board','Bearing Failure',
+            'Casting Failure / Wear','Manufacturer Defect'
+          ].map(item=>`
+          <tr>
+            <td style="font-size:10px;padding:1px 4px">${item}</td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+          </tr>`).join('')}
+        </table>
+      </td>
+
+      <!-- RIGHT COLUMN -->
+      <td style="border:1px solid #000;padding:0;vertical-align:top">
+
+        <!-- INCOMING TEST -->
+        <div style="background:#d9d9d9;font-weight:700;font-size:8px;letter-spacing:1px;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">INCOMING TEST</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Shaft Turns Free &nbsp;&nbsp;<input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Meg/Volts &nbsp;&nbsp;<input type="text" style="width:60%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:none"><colgroup><col style="width:22%"><col style="width:26%"><col style="width:22%"><col style="width:30%"></colgroup>
+              <tr><td style="font-weight:700;padding:0 4px 0 0;border:none">Low Ohm</td><td style="padding:0 4px 0 0;border:none">A-B <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">A-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">B-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:none"><colgroup><col style="width:22%"><col style="width:26%"><col style="width:22%"><col style="width:30%"></colgroup>
+              <tr><td style="font-weight:700;padding:0 4px 0 0;border:none">Amps</td><td style="padding:0 4px 0 0;border:none">A &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td><td style="padding:0 4px 0 0;border:none">B &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td><td style="padding:0 4px 0 0;border:none">C &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Voltage &nbsp;&nbsp;<input type="text" style="width:62%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Overloads &nbsp;&nbsp;<input type="text" style="width:58%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+        </table>
+
+        <!-- STATOR TEST BEFORE ASSEMBLY -->
+        <div style="background:#d9d9d9;font-weight:700;font-size:8px;letter-spacing:1px;text-align:center;padding:1px;margin-top:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">STATOR TEST BEFORE ASSEMBLY</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Meg/Volts &nbsp;&nbsp;<input type="text" style="width:60%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Scope &nbsp;&nbsp;<input type="text" style="width:65%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Overload Test &nbsp;&nbsp;<input type="text" style="width:53%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Phase Bal Volts/Amps &nbsp;&nbsp;<input type="text" style="width:36%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+        </table>
+
+        <!-- PUMP FINAL TEST RUN -->
+        <div style="background:#d9d9d9;font-weight:700;font-size:8px;letter-spacing:1px;text-align:center;padding:1px;margin-top:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">PUMP FINAL TEST RUN</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Shaft Turns Free &nbsp;&nbsp;<input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Meg Ohms/Volts &nbsp;&nbsp;<input type="text" style="width:53%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:none"><colgroup><col style="width:26%"><col style="width:25%"><col style="width:22%"><col style="width:27%"></colgroup>
+              <tr><td style="font-weight:700;padding:0 4px 0 0;border:none">Run Voltage</td><td style="padding:0 4px 0 0;border:none">A-B <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">A-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">B-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:none"><colgroup><col style="width:26%"><col style="width:25%"><col style="width:22%"><col style="width:27%"></colgroup>
+              <tr><td style="font-weight:700;padding:0 4px 0 0;border:none">Low Ohm</td><td style="padding:0 4px 0 0;border:none">A-B <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">A-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td><td style="padding:0 4px 0 0;border:none">B-C <input type="text" style="width:55%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:none"><colgroup><col style="width:26%"><col style="width:25%"><col style="width:22%"><col style="width:27%"></colgroup>
+              <tr><td style="font-weight:700;padding:0 4px 0 0;border:none">Amps</td><td style="padding:0 4px 0 0;border:none">A &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td><td style="padding:0 4px 0 0;border:none">B &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td><td style="padding:0 4px 0 0;border:none">C &nbsp;<span style="display:inline-block;width:65%;border-bottom:1px solid #000;vertical-align:bottom"></span></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #000">Vibration &nbsp;&nbsp;<input type="text" style="width:62%;border:none;border-bottom:1px solid #000;outline:none;font-size:10px;padding:0 2px;vertical-align:bottom;background:transparent"></td></tr>
+        </table>
+
+        <div style="background:#d9d9d9;font-weight:700;font-size:9px;letter-spacing:1px;text-align:center;padding:1px;margin-top:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">INSPECTION CHECKLIST</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:auto"><col style="width:28px"><col style="width:28px"></colgroup>
+          <tr>
+            <td style="background:#f0f0f0;font-size:8px;font-weight:700;padding:1px 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"></td>
+            <td style="background:#f0f0f0;font-size:8px;font-weight:700;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">PASS</td>
+            <td style="background:#f0f0f0;font-size:8px;font-weight:700;text-align:center;padding:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">FAIL</td>
+          </tr>
+          ${checks.map(item => item.type === 'split' ? `
+          <tr>
+            <td style="font-size:9px;padding:2px 4px">
+              <div style="display:flex;align-items:center">
+                <span style="flex:0 0 auto">${item.left}</span>
+                <span style="flex:1;text-align:right;padding-right:4px">${item.right}</span>
+              </div>
+            </td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+          </tr>` : item.type === 'nopf' ? `
+          <tr>
+            <td colspan="3" style="font-size:9px;padding:1px 4px">
+              <div style="display:flex;align-items:center">
+                <span style="display:inline-block;width:130px;flex-shrink:0">${item.label}</span>
+                <span style="flex:1;text-align:center">${item.label2}</span>
+              </div>
+            </td>
+          </tr>` : item.type === 'raw' ? `
+          <tr>
+            <td colspan="3" style="font-size:9px;padding:2px 4px;white-space:nowrap">${item.label}</td>
+          </tr>` : `
+          <tr>
+            <td style="font-size:9px;padding:2px 4px">${item.label}</td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+            <td style="text-align:center;padding:1px"><span class="chk"></span></td>
+          </tr>`).join('')}
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;border-top:1px solid #000;margin-top:1px;table-layout:fixed">
+          <colgroup><col style="width:22%"><col style="width:28%"><col style="width:22%"><col style="width:28%"></colgroup>
+          <tr>
+            <td style="font-size:6.5px;font-weight:700;padding:2px 3px;white-space:nowrap">QUOTED:</td>
+            <td style="padding:2px 3px"><input type="text" style="width:100%;font-size:7px;border:none;border-bottom:1px solid #999;outline:none"></td>
+            <td style="font-size:6.5px;font-weight:700;padding:2px 3px;white-space:nowrap">APPROVED BY:</td>
+            <td style="padding:2px 3px"><input type="text" style="width:100%;font-size:7px;border:none;border-bottom:1px solid #999;outline:none"></td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</div>
+</div>`;
+}
+
+
+// ── CENTRIFUGAL PUMP QA CARD (placeholder) ─────────────────────────────
+function buildCentrifugalPumpCard(d) {
+  return buildMotorCard(d); // placeholder until spec provided
+}
+
+// ── MOTOR (NEMA) QA CARD ───────────────────────────────────────────────
+function buildMotorCard(d) {
+  const v = k => d[k] || '';
+  const checks = [
+    ['Winding Resistance','yesno'],['Megger Test','yesno'],['Surge Test','yesno'],
+    ['Bearing Inspection','yesno'],['Shaft Inspection','yesno'],['Stator Rewind','yesno'],
+    ['Rotor Balanced','yesno'],['Rotor Cleaned','yesno'],['Stator Varnished','yesno'],
+    ['Stator Baked','yesno'],['New Bearings','yesno'],['New Seals','yesno'],
+    ['Rotation Check','passfail'],['No Load Amps OK','yesno'],['Full Load Test','passfail'],
+    ['Vibration OK','passfail'],['Temp Rise OK','yesno'],['Alignment OK','passfail'],
+    ['Coupling OK','passfail'],['Bolt Torque OK','yesno'],['QA Done','yesno'],
+    ['Customer Approval','yesno'],['Ready for Delivery','yesno'],
+  ];
+  const clRows = checks.map(item=>`
+    <tr>
+      <td style="font-size:10px;padding:1px 4px">${item[0]}</td>
+      <td class="center" style="width:72px;padding:1px 2px">
+        <button class="tog ${item[1]==='yesno'?'tog-y':'tog-p'}" data-opts="${item[1]==='yesno'?'YES,NO':'PASS,FAIL'}" data-cur="${item[1]==='yesno'?'YES':'PASS'}">${item[1]==='yesno'?'YES':'PASS'}</button>
+      </td>
+    </tr>`).join('');
+
+  return `
+<table style="table-layout:fixed">
+  <colgroup><col style="width:auto"><col style="width:200px"></colgroup>
+  <tr>
+    <td style="border:none;padding:0;vertical-align:top">
+      <table>
+        <tr>
+          <td colspan="3" style="padding:6px 8px;border-bottom:2px solid #000">
+            <div class="logo-wrap">
+              <div class="logo-ring">A&amp;I</div>
+              <div><div class="ai-text">A&amp;I SERVICES</div><div style="font-size:9px">PUMP &amp; MOTOR REPAIR</div></div>
+              <div style="flex:1;text-align:center">
+                <div style="font-size:10px;font-weight:700;font-weight:700">JOB NO.</div>
+                <input type="text" style="width:140px;text-align:center;font-size:18px;font-weight:900;border-bottom:2px solid #000">
+              </div>
+              <div style="text-align:right;font-size:10px;font-weight:700">
+                <div style="font-size:13px;font-weight:900;letter-spacing:2px">MOTOR (NEMA)</div>
+                <div>QA DATA SHEET</div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr><td colspan="3" style="padding:0">
+          <table style="border:none"><tr>
+            <td style="border:none;border-right:1px solid #000;width:30%;padding:2px 5px"><div style="font-size:9px;font-weight:700">CUSTOMER NAME</div><input type="text" style="width:100%;font-size:12px;font-weight:700"></td>
+            <td style="border:none;border-right:1px solid #000;width:30%;padding:2px 5px"><div style="font-size:9px;font-weight:700">LOCATION</div><input type="text" style="width:100%;font-size:12px"></td>
+            <td style="border:none;border-right:1px solid #000;width:20%;padding:2px 5px"><div style="font-size:9px;font-weight:700">L/S#</div><input type="text" style="width:100%;font-size:12px"></td>
+            <td style="border:none;width:20%;padding:2px 5px"><div style="font-size:9px;font-weight:700">POSITION</div><input type="text" style="width:100%;font-size:12px"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td colspan="3" class="gray bold center" style="font-size:10px;letter-spacing:1px;padding:3px">NAMEPLATE DATA</td></tr>
+        ${[['Make',v('make')],['Model',v('model')],['Serial No.',v('serialNo')],['HP',v('hp')],
+           ['Voltage',v('voltage')],['Amperage (FLA)',v('amperage')],['RPM',v('rpm')],
+           ['Hz',v('hz')],['Phase',v('phase')],['SF',v('sf')],['Ins. Class',v('insClass')],
+           ['Frame',v('frame')],['Enclosure',v('enclosure')],['Bearing DE',v('bearingDE')],['Bearing ODE',v('bearingODE')]
+          ].map((r,i)=>`
+        <tr>
+          <td style="font-size:10px;font-weight:700;width:130px;padding:2px 6px">${r[0]}</td>
+          <td style="padding:2px 6px"><input type="text" value="${r[1]}" style="font-size:12px;font-weight:${r[1]?'700':'400'}"></td>
+          <td class="pink bold center" style="width:90px;font-size:10px;padding:2px 4px">${i===0?'QUOTED':i===6?'APPROVED':i===12?'PARTS ORDERED':''}</td>
+        </tr>`).join('')}
+        <tr><td colspan="3" class="gray bold center" style="font-size:10px;letter-spacing:1px;padding:3px">INCOMING TEST</td></tr>
+        <tr><td class="ltgray bold" style="font-size:10px;padding:2px 6px">Measurement</td><td class="ltgray bold center" style="font-size:10px">A-B</td><td class="ltgray bold center" style="font-size:10px">A-C / B-C</td></tr>
+        ${['Winding Resistance (Ω)','Insulation Resistance (MΩ)','Core Loss (W)'].map(l=>`
+        <tr><td style="font-size:10px;padding:2px 6px">${l}</td><td><input type="text" style="text-align:center;font-size:11px"></td><td><input type="text" style="text-align:center;font-size:11px"></td></tr>`).join('')}
+        <tr><td colspan="3" class="gray bold center" style="font-size:10px;letter-spacing:1px;padding:3px">FINAL TEST RUN</td></tr>
+        <tr><td class="ltgray bold" style="font-size:10px;padding:2px 6px">Measurement</td><td class="ltgray bold center" style="font-size:10px">A-B</td><td class="ltgray bold center" style="font-size:10px">A-C / B-C</td></tr>
+        ${['No Load Amps','Full Load Amps','Vibration (in/s)','Temperature Rise (°C)'].map(l=>`
+        <tr><td style="font-size:10px;padding:2px 6px">${l}</td><td><input type="text" style="text-align:center;font-size:11px"></td><td><input type="text" style="text-align:center;font-size:11px"></td></tr>`).join('')}
+        <tr><td style="font-size:10px;font-weight:700;padding:2px 5px">TECH:</td><td style="padding:2px 5px"><input type="text" style="font-size:11px"></td><td style="padding:2px 5px;font-size:10px;font-weight:700">DATE: <input type="text" style="width:80px;font-size:11px"></td></tr>
+        <tr><td style="font-size:10px;font-weight:700;padding:2px 5px">NOTES:</td><td colspan="2" style="padding:2px 5px"><input type="text" style="font-size:11px"></td></tr>
+      </table>
+    </td>
+    <td style="border:none;padding:0;vertical-align:top;width:200px;border-left:2px solid #000">
+      <table style="width:100%">
+        <tr><td colspan="2" class="gray bold center" style="font-size:10px;letter-spacing:1px;padding:3px">INSPECTION CHECKLIST</td></tr>
+        ${clRows}
+        <tr><td style="font-size:9px;font-weight:700;padding:3px 4px">INSPECTOR:</td><td><input type="text" style="font-size:10px"></td></tr>
+        <tr><td style="font-size:9px;font-weight:700;padding:3px 4px">APPROVED BY:</td><td><input type="text" style="font-size:10px"></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+// ── SUBMERSIBLE MOTOR QA (reuse motor card with sub-specific additions) ─
+function buildSubmersibleMotorCard(d) {
+  return buildMotorCard(d); // will differentiate once motor card is confirmed
+}
+
+// ── UTILITIES ──────────────────────────────────────────────────────────
+function log(msg, type='') {
+  const el = document.getElementById('scanLog');
+  const line = document.createElement('div');
+  line.className = 'log-line' + (type ? ' '+type : '');
+  line.textContent = '› ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function showLog() { document.getElementById('scanLog').classList.add('show'); }
+function clearLog() {
+  document.getElementById('scanLog').innerHTML = '';
+  document.getElementById('scanLog').classList.remove('show');
+}
+
+function exportJSON() {
+  if (!currentData) return;
+  const blob = new Blob([JSON.stringify(currentData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nameplate-data.json';
+  a.click();
+}
+
+function resetAll() {
+  currentImage = null;
+  currentData  = null;
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('previewImg').src = '';
+  document.getElementById('fileInp').value = '';
+  document.getElementById('unitBadge').classList.remove('show');
+  document.getElementById('jcWrap').classList.remove('show');
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('fgWrap').innerHTML = '';
+  document.getElementById('unitName').textContent = '—';
+  document.getElementById('printBtn').disabled = true;
+  clearLog();
+  checkReady();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────
+loadApiKey();
+function saveSetupKey() {
+  const k = document.getElementById('setupKeyInp').value.trim().replace(/[^ -~]/g, '');
+  if (k.length < 20) {
+    document.getElementById('setupErr').style.display = 'block';
+    return;
+  }
+  try { localStorage.setItem('np_apikey', k); } catch(e){}
+  _apiKey = k;
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('apiInp').value = '••••••••••••••••••••••••';
+  updateApiDot();
+  checkReady();
+}
+</script>
+</body>
+</html>
